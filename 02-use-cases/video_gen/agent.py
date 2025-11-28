@@ -13,22 +13,24 @@
 # limitations under the License.
 
 import logging
-from agentkit.apps import AgentkitSimpleApp
-from google.adk.agents import RunConfig
-from google.adk.agents.run_config import StreamingMode
-from google.genai.types import Content, Part
-from veadk import Runner
-from veadk.agent_builder import AgentBuilder
 import os
-from google.adk.tools.mcp_tool.mcp_toolset import (
-    McpToolset,
-    StdioServerParameters,
-    StdioConnectionParams,
-)
 import sys
 from pathlib import Path
 
-logging.basicConfig(level=logging.DEBUG)
+from agentkit.apps import AgentkitSimpleApp, AgentkitAgentServerApp
+from google.adk.agents import RunConfig
+from google.adk.agents.run_config import StreamingMode
+from google.adk.tools.mcp_tool.mcp_toolset import (McpToolset,
+                                                   StdioConnectionParams,
+                                                   StdioServerParameters)
+from google.genai.types import Content, Part
+from veadk import Runner
+from veadk.agent_builder import AgentBuilder
+from veadk.memory.short_term_memory import ShortTermMemory
+
+# 建议通过logging.basicConfig设置全局logger，默认Log级别为INFO
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # 当前目录
 sys.path.append(str(Path(__file__).resolve().parent))
@@ -36,16 +38,11 @@ sys.path.append(str(Path(__file__).resolve().parent))
 # 上层目录
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from veadk.memory.short_term_memory import ShortTermMemory
-
-from agentkit.apps import AgentkitAgentServerApp
-
 app_name = "storyvideo"
-
 app = AgentkitSimpleApp()
-
 agent_builder = AgentBuilder()
 
+# 配置MCP Tool，用于视频剪辑
 server_parameters = StdioServerParameters(
     command="npx",
     args=["@pickstar-2002/video-clip-mcp@latest"],
@@ -57,8 +54,8 @@ mcpTool = McpToolset(
     ),
     errlog=None
 )
+
 yaml_path = "agent.yaml"
-#support veadk web
 if not os.path.isfile(yaml_path):
     yaml_path = "video_gen/agent.yaml"
 
@@ -66,8 +63,10 @@ agent = agent_builder.build(path=yaml_path)
 agent.tools.append(mcpTool)
 
 runner = Runner(agent=agent, app_name=app_name)
+# support veadk web
 root_agent = agent
 
+# support api server
 short_term_memory = ShortTermMemory(backend="local")
 agent_server_app = AgentkitAgentServerApp(
     agent=agent,

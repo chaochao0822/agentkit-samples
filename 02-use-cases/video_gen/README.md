@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-本项目提供一个基于火山引擎 AgentKit 的“绘本故事视频生成”Agent。它会根据用户输入的成语故事情节：
+本项目提供一个基于火山引擎 AgentKit 的“成语绘本故事视频生成”Agent。它会根据用户输入的成语故事情节：
 
 - 生成四张卡通风格的分镜插画
 - 以相邻分镜为首尾帧生成三段过渡视频
@@ -56,7 +56,7 @@ export DOWNLOAD_DIR=/path/to/downloads
 ```
 
 TOS 存储桶说明：
-- 默认使用 `tool/tos_upload.py` 中的 `bucket_name="generate-video-new"`
+- 默认使用 `tool/tos_upload.py` 中的 `bucket_name="agentkit-platform-{{your account_id}}"`
 - 如需自定义，可在调用工具时传入 `bucket_name`，或直接修改 `tool/tos_upload.py` 的默认参数为你的 Bucket 名称
 
 ### 4. 启动与部署
@@ -72,21 +72,22 @@ python agent.py
 
 ```bash
 agentkit config \
---agent_name deepresearch \
+--agent_name video_gen \
 --entry_point 'agent.py' \
---runtime_envs VOLCENGINE_ACCESS_KEY=<你的VOLCENGINE_ACCESS_KEY> \
---runtime_envs VOLCENGINE_SECRET_KEY=<你的VOLCENGINE_SECRET_KEY>\
+--runtime_envs DATABASE_TOS_BUCKET=agentkit-platform-{{your account_id}} \ # example: agentkit-platform-12345678901234567890
 --launch_type cloud && \
+#--iam-role <your iam role>\
 agentkit launch
 ```
 
 ## 使用与测试
 
 通过 AgentKit 调用示例：
-Prompt：后移射日，嫦娥奔月，吴刚伐木真人版
-Prompt: 愚公移山与精卫填海绘本故事
-Prompt: 射雕英雄传的真人版视频故事
-Prompt: 凡人修仙传韩立结婴
+- Prompt：后移射日，嫦娥奔月，吴刚伐木真人版
+- Prompt: 愚公移山与精卫填海绘本故事
+- Prompt: 射雕英雄传的真人版视频故事
+- Prompt: 凡人修仙传韩立结婴
+- Prompt: 凡人修仙传虚天殿大战，3D动漫风格
 
 
 ```bash

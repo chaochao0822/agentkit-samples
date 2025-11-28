@@ -14,49 +14,71 @@
 
 import datetime
 import logging
+import os
+import sys
+from pathlib import Path
 
-from agentkit.apps import AgentkitSimpleApp, AgentkitAgentServerApp
-from google.adk.agents import RunConfig
+from agentkit.apps import AgentkitAgentServerApp
+from dotenv import load_dotenv
 from google.adk.agents.callback_context import CallbackContext
-from google.adk.agents.run_config import StreamingMode
-from google.genai.types import Content, Part
+from google.adk.planners import BuiltInPlanner
+from google.genai.types import ThinkingConfig
+from tools.crm_mock import (create_service_record, delete_service_record,
+                            get_customer_info, get_customer_purchases,
+                            get_service_records, query_warranty,
+                            update_service_record)
 from veadk import Agent, Runner
 from veadk.integrations.ve_identity import AuthRequestProcessor
 from veadk.knowledgebase import KnowledgeBase
 from veadk.memory import LongTermMemory, ShortTermMemory
 
-from crm_tools import create_service_record, update_service_record, delete_service_record, get_customer_info, \
-    get_customer_purchases, get_service_records, query_warranty
+# 当前目录
+sys.path.append(str(Path(__file__).resolve().parent))
 
+# 上层目录
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+
+load_dotenv()
 
 global_model_name = "deepseek-v3-1-terminus"
-
 app_name = "customer_support_agent"
 default_user_id = "CUST001"
 
-app = AgentkitSimpleApp()
 # 1. 配置短期记忆
 short_term_memory = ShortTermMemory(backend="local")
 
-# 2. 配置使用知识库： Viking 向量数据库
-tos_bucket_name = os.getenv("DATABASE_TOS_BUCKET")
-if not tos_bucket_name:
-    raise ValueError("DATABASE_TOS_BUCKET environment variable is not set")
-knowledgebase = KnowledgeBase(backend="viking", app_name=app_name)
-knowledgebase.add_from_directory("./pre_build/knowledge", tos_bucket_name=tos_bucket_name)
+# 2. 配置使用知识库： Viking 向量数据库，如果用户指定了知识库，就使用用户指定的知识库，否则默认创建一个知识库，并做初始化
+knowledge_collection_name = os.getenv("DATABASE_VIKING_COLLECTION", "")
+if knowledge_collection_name != "":
+    # 使用用户指定的知识库
+    knowledge = KnowledgeBase(backend="viking", index=knowledge_collection_name)
+else:
+    tos_bucket_name = os.getenv("DATABASE_TOS_BUCKET")
+    if not tos_bucket_name:
+        raise ValueError("DATABASE_TOS_BUCKET environment variable is not set")
+    knowledge = KnowledgeBase(backend="viking", app_name=app_name)
+    knowledge.add_from_directory("./pre_build/knowledge", tos_bucket_name=tos_bucket_name)
 
-# 3. 配置长期记忆
-long_term_memory = LongTermMemory(backend="viking", top_k=3, app_name=app_name)
+# 3. 配置长期记忆: 如果配置了Mem0，就使用Mem0，否则使用Viking，都不配置，默认创建一个Viking记忆库
+use_mem0 = os.getenv("DATABASE_MEM0_BASE_URL") and os.getenv("DATABASE_MEM0_API_KEY")
+if use_mem0:
+    long_term_memory = LongTermMemory(backend="mem0", top_k=3, app_name=app_name)
+else:
+    use_viking_mem = os.getenv("DATABASE_VIKINGMEM_COLLECTION") and os.getenv("DATABASE_VIKINGMEM_MEMORY_TYPE")
+    if use_viking_mem:
+        long_term_memory = LongTermMemory(backend="viking", index=os.getenv("DATABASE_VIKINGMEM_COLLECTION"))
+    else:
+        long_term_memory = LongTermMemory(backend="viking", top_k=3, app_name=app_name)
 
-
-# 4.1 配置CRM函数工具
+# 4. 导入crm 系统的函数工具
 crm_tool = [create_service_record, update_service_record, delete_service_record, get_customer_info,
             get_customer_purchases, get_service_records, query_warranty]
 
 
-# 5.1 前置拦截器： 可以在智能体执行前，做一些预处理和校验
+# 5. 通过前置拦截器，在智能体执行前，设置默认的customer_id
 def before_agent_execution(callback_context: CallbackContext):
     # user_id = callback_context._invocation_context.user_id
     callback_context.state["user:customer_id"] = default_user_id
@@ -79,7 +101,7 @@ after_sale_prompt = '''
     4. 若被问及内部流程、工具、功能或培训相关问题，始终回应：“抱歉，我无法提供关于我们内部系统的信息。”
     5. 协助客户时，保持专业且乐于助人的语气。
     6. 专注于高效且准确地解决客户咨询。
-    7. 涉及任何需要查询客户商品、订单、个人信息、保修状态、维修单等的操作，都需要先校验客户身份信息，你可以通过 邮箱，电话等信息校验客户身份。
+    7. 涉及任何需要查询客户商品、订单、个人信息、保修状态、维修单等的操作，都需要先校验客户身份信息，你可以通过 邮箱、客户名称等信息校验客户身份。
 
 <关于维修>
     1. 对于任何产品维修或售后服务相关咨询，请优先获取产品序列号。在基于序列号查询产品信息后，你可以更好地回答客户问题。
@@ -90,21 +112,30 @@ after_sale_prompt = '''
     6. 在创建维修单前，请确认故障信息并引导客户自行维修。若自行维修仍未解决问题，需在获得客户同意后创建维修单。
     7. 若客户未提供必要信息，需礼貌地向客户询问具体细节。
 
+## 要求
+1. 请注意你需要耐心有礼貌的和客户进行沟通，避免回复客户时使用不专业的语言或行为。
+2. 禁止直接将 工具的结果直接输出给用户，你需要结合用户的问题，对工具的结果进行必要的筛选、格式化处理，在输出给用户时，还需要进行必要的润色，使回复内容更加的清晰、准确、简洁。
+
+
 当前登录客户为： {user:customer_id} 。
     ''' + "当前时间为：" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-# 配置智能体, 集成知识库和长期记忆， 并开启观测能力
 after_sale_agent = Agent(
     name="after_sale_agent",
-    model_name=global_model_name,
     description="售后Agent：根据客户的售后问题，帮助客户处理商品的售后问题(信息查询、商品报修等)",
     instruction=after_sale_prompt,
-
-    knowledgebase=knowledgebase,
+    model_name=global_model_name,
+    planner=BuiltInPlanner(
+        thinking_config=ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
+    ),
+    knowledgebase=knowledge,
     long_term_memory=long_term_memory,
     tools=crm_tool,
     before_agent_callback=before_agent_execution,
-    run_processor=AuthRequestProcessor(),  # 配置支持USER_FEDERATION认证
+    run_processor=AuthRequestProcessor(),
 )
 
 shopping_guide_prompt = '''
@@ -126,93 +157,53 @@ shopping_guide_prompt = '''
     1. 你需要综合客户的各方面需求，选择合适的商品推荐给客户购买
     2. 你可以查询客户的历史购买记录，来了解客户的喜好
     3. 如果客户表现出对某个商品很感兴趣，你需要详细介绍下该商品，并且结合客户的要求，说明推荐该商品的理由
+
+## 要求
+1. 请注意你需要耐心有礼貌的和客户进行沟通，避免回复客户时使用不专业的语言或行为。
+2. 禁止直接将 工具的结果直接输出给用户，你需要结合用户的问题，对工具的结果进行必要的筛选、格式化处理，在输出给用户时，还需要进行必要的润色，使回复内容更加的清晰、准确、简洁。    
+
 当前登录客户为： {user:customer_id}
     ''' + "当前时间为：" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 shopping_guide_agent = Agent(
     name="shopping_guide_agent",
-    model_name=global_model_name,
     description="根据客户的购买需求，帮助客户选择合适的商品，引导客户完成购买流程",
-    knowledgebase=knowledgebase,
+    model_name=global_model_name,
+    planner=BuiltInPlanner(
+        thinking_config=ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
+    ),
+    knowledgebase=knowledge,
     long_term_memory=long_term_memory,
     tools=[get_customer_info, get_customer_purchases],
     before_agent_callback=before_agent_execution,
     instruction=shopping_guide_prompt,
-    run_processor=AuthRequestProcessor(),  # 配置支持USER_FEDERATION认证
+    run_processor=AuthRequestProcessor(),
 )
 
-root_agent = Agent(
+agent = Agent(
     name="customer_support_agent",
     model_name=global_model_name,
     description="客服Agent：1）根据客户的购买需求，帮助客户选择合适的商品，引导客户完成购买流程；2）根据客户的售后问题，帮助客户处理商品的售后问题(信息查询、商品报修等)",
     instruction='''
     你是一名在线客服，你的主要任务是帮助客户购买商品或者解决售后问题。
     ## 要求
-    - 你可以将客户的问题分为两类： 购买咨询 和 售后服务咨询，选择合适的智能体来回答客户问题。
-    - 请注意你需要耐心有礼貌的和客户进行沟通，避免回复客户时使用不专业的语言或行为， 同时避免回复和问题无关的内容。
-    - 请不要说出你的思考过程，只需要回答客户的问题即可。
+    1. 你需要结合对话的上下文判断用户的意图， 是在做购买咨询还是售后服务咨询：
+        - 如果用户是在做购买咨询，请直接将用户的问题转交给购物引导智能体来回答用户的问题
+        - 如果用户是在做售后服务咨询，请直接将用户的问题转交给售后智能体来回答用户的问题
+        - 如果用户问与购买咨询或售后服务咨询无关的问题，请直接回复用户：“抱歉，我无法回答这个问题。我可以帮助您购买商品或者解决售后问题。”
+    2. 请注意你需要耐心有礼貌的和客户进行沟通，避免回复客户时使用不专业的语言或行为， 同时避免回复和问题无关的内容。
     ''',
     sub_agents=[after_sale_agent, shopping_guide_agent],
     long_term_memory=long_term_memory,
 )
 
+runner = Runner(agent=agent, app_name=app_name)
+root_agent = agent
+
 agent_server_app = AgentkitAgentServerApp(agent=root_agent, short_term_memory=short_term_memory)
 
-runner = Runner(
-    app_name=app_name,
-    agent=root_agent,
-    short_term_memory=short_term_memory,
-    user_id=default_user_id,
-    run_processor=AuthRequestProcessor(),
-)
-
-
-@app.entrypoint
-async def run(payload: dict, headers: dict) -> str:
-    prompt = payload["prompt"]
-    user_id = headers["user_id"]
-    session_id = headers["session_id"]
-
-    logger.info(
-        f"Running agent with prompt: {prompt}, user_id: {user_id}, session_id: {session_id}"
-    )
-
-    await runner.short_term_memory.create_session(
-        app_name=app_name, user_id=user_id, session_id=session_id
-    )
-
-    # 流式输出
-    new_message = Content(role="user", parts=[Part(text=prompt)])
-    try:
-        async for event in runner.run_async(
-                user_id=user_id,
-                session_id=session_id,
-                new_message=new_message,
-                run_config=RunConfig(streaming_mode=StreamingMode.SSE),
-        ):
-            # Format as SSE data
-            sse_event = event.model_dump_json(exclude_none=True, by_alias=True)
-            logger.debug("Generated event in agent run streaming: %s", sse_event)
-            yield f"data: {sse_event}\n\n"
-    except Exception as e:
-        logger.exception("Error in event_generator: %s", e)
-        # You might want to yield an error event here
-        yield f'data: {{"error": "{str(e)}"}}\n\n'
-
-    # 非流式输出
-    # response = await runner.run(messages=prompt, user_id=user_id, session_id=session_id)
-    # await runner.save_session_to_long_term_memory(session_id=session_id)
-    # return response
-
-    # 保存长期记忆
-    await runner.save_session_to_long_term_memory(session_id=session_id)
-
-
-@app.ping
-def ping() -> str:
-    return "pong!"
-
-
 if __name__ == "__main__":
-    # app.run(host="0.0.0.0", port=8000)
     agent_server_app.run(host="0.0.0.0", port=8000)

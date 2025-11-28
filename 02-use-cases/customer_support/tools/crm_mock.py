@@ -12,12 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, date
-from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
-from litellm.llms.anthropic.experimental_pass_through.messages.utils import mock_response
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
+
+
+class ServiceRecordCreate(BaseModel):
+    serial_number: str
+    service_type: str
+    description: str
+    technician: str
+    service_date: str
+    estimated_duration: int
+
+
+class ServiceRecordUpdate(BaseModel):
+    service_date: Optional[str] = None
+    status: Optional[str] = None
+    actual_duration: Optional[int] = None
+    notes: Optional[str] = None
+
+
+mock_service_records = [
+    {
+        "record_id": "SRV001",
+        "serial_number": "SN20240001",
+        "customer_id": "CUST001",
+        "service_date": "2024-01-15 10:00:00",
+        "service_type": "屏幕维修",
+        "description": "屏幕出现竖线",
+        "technician": "王师傅",
+        "status": "completed",
+        "estimated_duration": 120,
+        "actual_duration": 110,
+        "notes": "更换屏幕面板，测试正常"
+    },
+]
 
 
 def get_customer_info(customer_id: str) -> dict:
@@ -32,10 +62,9 @@ def get_customer_info(customer_id: str) -> dict:
         "customer_id": "CUST001",
         "name": "张明",
         "email": "zhang.ming@example.com",
-        "phone": "+86-138-0011-2233",
         "address": "北京市朝阳区建国门外大街1号",
-        "registration_date": date(2022, 3, 15),
-        "date_of_birth": date(1985, 8, 20),
+        "registration_date": "2022-03-15",
+        "date_of_birth": "1985-10-20",
         "notes": "优质客户，经常购买高端产品",
         "total_purchases": 3,
         "lifetime_value": 28500.00,
@@ -103,41 +132,6 @@ def query_warranty(serial_number: str) -> dict:
         "warranty_type": "extended",
         "status_text": "保修已经过期"
     }
-
-
-class ServiceRecordCreate(BaseModel):
-    """创建维修记录请求"""
-    serial_number: str
-    service_type: str
-    description: str
-    technician: str
-    service_date: datetime
-    estimated_duration: int
-
-
-class ServiceRecordUpdate(BaseModel):
-    """更新维修记录请求"""
-    service_date: Optional[datetime] = None
-    status: Optional[str] = None
-    actual_duration: Optional[int] = None
-    notes: Optional[str] = None
-
-
-mock_service_records = [
-    {
-        "record_id": "SRV001",
-        "serial_number": "SN20240001",
-        "customer_id": "CUST001",
-        "service_date": datetime(2024, 1, 15, 10, 0),
-        "service_type": "屏幕维修",
-        "description": "屏幕出现竖线",
-        "technician": "王师傅",
-        "status": "completed",
-        "estimated_duration": 120,
-        "actual_duration": 110,
-        "notes": "更换屏幕面板，测试正常"
-    },
-]
 
 
 def get_service_records(customer_id: str) -> list:

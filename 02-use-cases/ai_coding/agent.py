@@ -15,18 +15,17 @@
 
 import logging
 
+from agentkit.apps import AgentkitAgentServerApp, AgentkitSimpleApp
 from google.adk.agents import RunConfig
 from google.adk.agents.run_config import StreamingMode
 from google.genai.types import Content, Part
+from tools import get_url_of_frontend_code_in_tos, upload_frontend_code_to_tos
 from veadk import Agent, Runner
 from veadk.memory import ShortTermMemory
 from veadk.tools.builtin_tools.run_code import run_code
 from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
 from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
-from tools import upload_frontend_code_to_tos, get_url_of_frontend_code_in_tos
 
-from agentkit.apps import AgentkitSimpleApp
-from agentkit.apps import AgentkitAgentServerApp
 logger = logging.getLogger(__name__)
 
 app = AgentkitSimpleApp()

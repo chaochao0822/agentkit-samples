@@ -26,7 +26,7 @@ def _init_tos_client():
         cred = get_credential_from_vefaas_iam()
         ak = cred.access_key_id
         sk = cred.secret_access_key
-        security_token = cred.security_token
+        security_token = cred.session_token
 
     client = tos.TosClientV2(ak=ak, sk=sk, security_token=security_token,
                              endpoint=f"tos-{region}.volces.com", region=region)

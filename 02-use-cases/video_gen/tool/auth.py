@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import json
-from pathlib import Path
-from pydantic import BaseModel
 import logging
+from pathlib import Path
+
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
