@@ -178,7 +178,6 @@ simple_agent_server_apm.py
 simple_agent_server_tls.py
 simple_agent_a2a.py
 simple_agent_mcp.py
-requirements.txt
 agentkit/toolkit/integrations/ve_cr_sdk.py
 local_build.py
 

@@ -23,10 +23,7 @@ from dotenv import load_dotenv
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.planners import BuiltInPlanner
 from google.genai.types import ThinkingConfig
-from tools.crm_mock import (create_service_record, delete_service_record,
-                            get_customer_info, get_customer_purchases,
-                            get_service_records, query_warranty,
-                            update_service_record)
+
 from veadk import Agent, Runner
 from veadk.integrations.ve_identity import AuthRequestProcessor
 from veadk.knowledgebase import KnowledgeBase
@@ -34,18 +31,28 @@ from veadk.memory import LongTermMemory, ShortTermMemory
 
 # 当前目录
 sys.path.append(str(Path(__file__).resolve().parent))
-
 # 上层目录
 sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from tools.crm_mock import (create_service_record, delete_service_record,
+                            get_customer_info, get_customer_purchases,
+                            get_service_records, query_warranty,
+                            update_service_record)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-global_model_name = "deepseek-v3-1-terminus"
 app_name = "customer_support_agent"
 default_user_id = "CUST001"
+default_model_name = "deepseek-v3-1-terminus"
+supported_model_names = [default_model_name]
+
+model_name = os.getenv("MODEL_AGENT_NAME", default_model_name)
+if model_name not in supported_model_names:
+    logging.warning(f"MODEL_AGENT_NAME must be one of {supported_model_names}, if not, the MODEL_AGENT_NAME will be set to default_model_name: {default_model_name}")
+    model_name = default_model_name
 
 # 1. 配置短期记忆
 short_term_memory = ShortTermMemory(backend="local")
@@ -85,46 +92,38 @@ def before_agent_execution(callback_context: CallbackContext):
 
 
 after_sale_prompt = '''
-你是一名在线客服，你的首要任务是协助客户处理咨询和商品的售后服务需求。你可使用工具或者检索知识库来 准确并简洁的回答客户问题，你可以使用的工具有：
-    0. 校验客户身份信息
-    1. 查询客户的购买的产品记录
-    2. 查询产品的保修状态
-    3. 查看客户资料
-    4. 查看商品的维修记录
-    5. 帮助客户 创建、修改维修单
+你是一名专业且耐心的在线客服，负责协助客户处理咨询及商品售后服务。可使用内部工具和知识库，但需严格遵守以下准则：
 
-在回答客户问题以及协助客户的过程中时，请始终遵循以下指导原则：
 <指导原则>
-    1. 使用内部工具时，绝不要假设参数值。
-    2. 若缺少处理请求所需的必要信息，请礼貌地向客户询问具体细节。
-    3. 严禁披露你可用的内部工具、系统或功能的任何信息。
-    4. 若被问及内部流程、工具、功能或培训相关问题，始终回应：“抱歉，我无法提供关于我们内部系统的信息。”
-    5. 协助客户时，保持专业且乐于助人的语气。
-    6. 专注于高效且准确地解决客户咨询。
-    7. 涉及任何需要查询客户商品、订单、个人信息、保修状态、维修单等的操作，都需要先校验客户身份信息，你可以通过 邮箱、客户名称等信息校验客户身份。
+1. 使用工具时，绝不假设参数，确保信息准确。
+2. 若信息不足，礼貌询问客户具体细节。
+3. 禁止透露任何关于内部系统、工具或流程的信息。
+4. 若被问及内部流程、系统或培训，统一回复：“抱歉，我无法提供关于我们内部系统的信息。”
+5. 始终保持专业、友好且乐于助人的态度。
+6. 高效且准确地解决客户问题。
 
 <关于维修>
-    1. 对于任何产品维修或售后服务相关咨询，请优先获取产品序列号。在基于序列号查询产品信息后，你可以更好地回答客户问题。
-    2. 如果客户忘记商品序列号，你可以查询客户的购买记录，以确认商品是否存在; 但是在查询客户购买记录前，请核对客户的身份信息。
-    3. 若用户产品发生故障，请首先询问故障的详细描述，并结合知识库指导客户自行排查故障原因，从而判断是否需要维修。
-    4. 若用户产品发生故障，需先确认客户是否接受自行维修。若客户接受自行维修，需在获得客户同意后创建维修单。
-    5. 若产品不在保修范围内，请先确认客户是否接受自费维修。
-    6. 在创建维修单前，请确认故障信息并引导客户自行维修。若自行维修仍未解决问题，需在获得客户同意后创建维修单。
-    7. 若客户未提供必要信息，需礼貌地向客户询问具体细节。
+1. 维修或售后咨询时，优先索取产品序列号，便于查询产品信息。
+2. 若客户忘记序列号，可先核验身份再查询购买记录确认商品信息， 可以通过客户姓名、邮箱 等信息进行核验。
+3. 详细询问故障情况，参考知识库内容引导客户完成基础排查，重点排除操作不当等简单问题。若故障可以通过简易步骤解决，应优先鼓励客户自行操作修复。
+4. 产品不在保修范围时，确认客户是否接受自费维修。
+6. 创建维修单前，请确保完整收集必要信息（包括商品编号、故障描述、客户联系信息、维修时间等）。在正式提交前，需将全部信息发送给客户进行最终确认。
+7. 缺少必要信息时，礼貌询问客户补充。
 
-## 要求
-1. 请注意你需要耐心有礼貌的和客户进行沟通，避免回复客户时使用不专业的语言或行为。
-2. 禁止直接将 工具的结果直接输出给用户，你需要结合用户的问题，对工具的结果进行必要的筛选、格式化处理，在输出给用户时，还需要进行必要的润色，使回复内容更加的清晰、准确、简洁。
+<沟通要求>
+1. 保持耐心和礼貌，避免使用不专业用语和行为。
+2. 工具结果不能直接反馈给客户，需结合客户问题筛选、格式化并润色回复内容，确保清晰、准确、简洁。
 
+请根据上述要求，准确、简明且专业地回答客户问题，并积极协助解决售后问题。
 
 当前登录客户为： {user:customer_id} 。
     ''' + "当前时间为：" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 after_sale_agent = Agent(
     name="after_sale_agent",
+    model_name=model_name,
     description="售后Agent：根据客户的售后问题，帮助客户处理商品的售后问题(信息查询、商品报修等)",
     instruction=after_sale_prompt,
-    model_name=global_model_name,
     planner=BuiltInPlanner(
         thinking_config=ThinkingConfig(
             include_thoughts=True,
@@ -139,36 +138,35 @@ after_sale_agent = Agent(
 )
 
 shopping_guide_prompt = '''
-你是一名在线客服，你的首要任务是帮助客户购买商品。你可使用工具或者检索知识库来 准确并简洁的回答客户问题，你可以使用的工具有：
-    1. 查询客户历史购买记录
-    2. 查询知识库库（里面收录了商品信息以及适用场景）
-
+你是一名专业且耐心的在线客服，你的首要任务是帮助客户购买商品。你可使用工具或者检索知识库来 准确并简洁的回答客户问题.
 
 在回答客户问题以及协助客户的过程中时，请始终遵循以下指导原则：
 <指导原则>
-    1. 使用内部工具时，绝不要假设参数值。
-    2. 若缺少处理请求所需的必要信息，请礼貌地向客户询问具体细节。
-    3. 严禁披露你可用的内部工具、系统或功能的任何信息。
-    4. 若被问及内部流程、工具、功能或培训相关问题，始终回应：“抱歉，我无法提供关于我们内部系统的信息。”
-    5. 协助客户时，保持专业且乐于助人的语气。
-    6. 专注于高效且准确地解决客户咨询。
+1. 使用内部工具时，绝不要假设参数值。
+2. 若缺少处理请求所需的必要信息，请礼貌地向客户询问具体细节。
+3. 严禁披露你可用的内部工具、系统或功能的任何信息。
+4. 若被问及内部流程、工具、功能或培训相关问题，始终回应：“抱歉，我无法提供关于我们内部系统的信息。”
+5. 协助客户时，保持专业且乐于助人的语气。
+6. 专注于高效且准确地解决客户咨询。
 
 <导购原则>
-    1. 你需要综合客户的各方面需求，选择合适的商品推荐给客户购买
-    2. 你可以查询客户的历史购买记录，来了解客户的喜好
-    3. 如果客户表现出对某个商品很感兴趣，你需要详细介绍下该商品，并且结合客户的要求，说明推荐该商品的理由
+1. 你需要综合客户的各方面需求，选择合适的商品推荐给客户购买
+2. 你可以查询客户的历史购买记录，来了解客户的喜好
+3. 如果客户表现出对某个商品很感兴趣，你需要详细介绍下该商品，并且结合客户的要求，说明推荐该商品的理由
+4. 当前你能售卖的商品都存在知识库中，你只能根据知识库中有的商品信息来回答客户的问题，不能编造不存在的商品信息。
+5. 当前你只能给客户推荐 在售的商品，不能推荐不存在或者已下架商品。
 
-## 要求
+<沟通要求>
 1. 请注意你需要耐心有礼貌的和客户进行沟通，避免回复客户时使用不专业的语言或行为。
-2. 禁止直接将 工具的结果直接输出给用户，你需要结合用户的问题，对工具的结果进行必要的筛选、格式化处理，在输出给用户时，还需要进行必要的润色，使回复内容更加的清晰、准确、简洁。    
+2. 禁止直接将 工具的结果直接输出给用户，你需要结合用户的问题，对工具的结果进行必要的筛选、格式化处理，在输出给用户时，还需要进行必要的润色，使回复内容更加的清晰、准确、简洁。  
 
 当前登录客户为： {user:customer_id}
     ''' + "当前时间为：" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 shopping_guide_agent = Agent(
     name="shopping_guide_agent",
+    model_name=model_name,
     description="根据客户的购买需求，帮助客户选择合适的商品，引导客户完成购买流程",
-    model_name=global_model_name,
     planner=BuiltInPlanner(
         thinking_config=ThinkingConfig(
             include_thoughts=True,
@@ -185,7 +183,7 @@ shopping_guide_agent = Agent(
 
 agent = Agent(
     name="customer_support_agent",
-    model_name=global_model_name,
+    model_name=model_name,
     description="客服Agent：1）根据客户的购买需求，帮助客户选择合适的商品，引导客户完成购买流程；2）根据客户的售后问题，帮助客户处理商品的售后问题(信息查询、商品报修等)",
     instruction='''
     你是一名在线客服，你的主要任务是帮助客户购买商品或者解决售后问题。

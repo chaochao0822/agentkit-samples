@@ -9,7 +9,6 @@
 - 工具集：客户信息、购买记录、保修查询、维修单增删改查（`tools/crm_mock.py`）
 - 知识库：首次运行自动将 `pre_build/knowledge/` 导入 Viking 向量库
 - 记忆：短期记忆（本地），长期记忆（Viking 或可选 Mem0）
-- 身份校验：`ve_identity.AuthRequestProcessor` 拦截器
 
 核心价值：
 - 统一客服入口：自动判别“导购/售后”意图并路由至对应子智能体
@@ -28,8 +27,9 @@ customer_support/
 │       ├── policies.md             # 退换货与保修策略
 │       ├── shopping_guide.md       # 商品导购知识
 │       └── troubleshooting_for_phone.md  # 手机故障排查
+│       └── troubleshooting_for_tv.md  # 电视故障排查
 ├── requirements.txt        # Python 依赖
-├── README.md               # 项目说明文档
+├── README.zh.md               # 项目说明文档
 └── .dockerignore
 ```
 
@@ -68,23 +68,51 @@ export DATABASE_MEM0_API_KEY=<mem0_api_key>
 
 ### 3. 启动与部署
 
-本地调试运行：
+#### 本地调试
+
+本地可以使用 veadk web 进行调试
 
 ```bash
-python agent.py
-# 服务默认监听 0.0.0.0:8000
+# 1. 进入 customer_support 的上级目录
+cd 02-use-cases
+
+# 2. [可选] 创建配置配置 .env 文件，如果 步骤2 已经配置了环境变量，这里可以跳过
+touch .env
+# 配置 .env 文件, 
+echo "VOLCENGINE_ACCESS_KEY=AK" >> .env
+echo "VOLCENGINE_SECRET_KEY=SK" >> .env
+# 知识库配置， 建议本地调试，可以在 agentkit 手动创建知识库， 并设置 DATABASE_VIKING_COLLECTION 为知识库索引
+echo "DATABASE_VIKING_COLLECTION=agentkit_customer_support" >> .env
+# 可选：如果未设置已有知识库，agent会自动创建知识库并做初始化导入， 这一步需要设置 DATABASE_TOS_BUCKET， 主要上传知识库内容并导入
+echo "DATABASE_TOS_BUCKET=agentkit-platform-{{your account_id}}" >> .env
+
+# 3.启动 veadk web 调试
+veadk web 
 ```
 
-部署到火山引擎 AgentKit（runtime）：
+veadk web 默认会监听 8000 端口， 服务启动后，你可以在浏览器中访问 `http://127.0.0.1:8000`， agent 选择 `customer_support`， 即可在 web 右侧的输入框中输入问题， 并查看智能体的回复。 
+
+
+#### 部署到火山引擎 AgentKit（runtime）：
+
+使用 agentkit 部署到火山引擎。
 
 ```bash
+# 1. 进入到 customer_support 目录
+cd 02-use-cases/customer_support
+
+# 2. 配置 agentkit
 agentkit config \
 --agent_name customer_support \
 --entry_point 'agent.py' \
 --runtime_envs DATABASE_TOS_BUCKET=agentkit-platform-{{your account_id}} \
---launch_type cloud && \
+--launch_type cloud
+
+# 3. 部署到 runtime 
 agentkit launch
 ```
+
+发布成功后，可以登录火山引擎 AgentKit 控制台，点击 Runtime 查看部署的智能体。
 
 ## 使用与测试
 
@@ -92,17 +120,6 @@ agentkit launch
 - 售后场景：你好，我之前买的一个电视坏了
 - 售后场景：我的邮箱是 zhang.ming@example.com，电视序列号 SN20240001
 - 导购场景：我想买一款客厅用的智能电视，用来打游戏用的，预算 3000 元以内
-
-通过 AgentKit 调用：
-
-```bash
-# 默认使用 CUST001 作为用户ID
-agentkit invoke --payload '{"prompt": "你好，我之前买的一个电视坏了"}' --headers '{"user_id": "CUST001", "session_id": "session1"}'
-
-agentkit invoke --payload '{"prompt": "我的邮箱是 zhang.ming@example.com"}' --headers '{"user_id": "CUST001", "session_id": "session1"}'
-
-agentkit invoke --payload '{"prompt": "我想买一款智能音箱，预算 3000 元以内"}' --headers '{"user_id": "CUST001", "session_id": "session1"}'
-```
 
 期望行为：
 - 自动识别“导购/售后”意图并路由至对应子智能体
@@ -114,19 +131,5 @@ agentkit invoke --payload '{"prompt": "我想买一款智能音箱，预算 3000
 - 首次运行报错 `DATABASE_TOS_BUCKET not set`：需设置用于知识导入的 TOS Bucket 名称。
 - 未设置 `DATABASE_VIKING_COLLECTION`：会触发自动导入，确保 TOS 配置正确且具备权限。
 - 默认用户 `CUST001`：示例数据绑定该客户；生产环境建议在请求头中传 `user_id` 并接入真实身份系统。
-- 工具返回原始字段不可直出：需根据提示规范进行筛选与润色再输出。
 - 替换为真实 CRM：可将 `tools/crm_mock.py` 替换为真实 API 封装，接口保持“查询/增删改”语义一致。
 
-## 参考
-
-- 工作流程定义见 `agent.py`：根智能体 `customer_support_agent` 根据意图路由至 `after_sale_agent` 或 `shopping_guide_agent`，并统一接入知识库与长期记忆。
-
-架构示意：
-
-```
-Client → AgentkitAgentServerApp → customer_support_agent
-         ├─ after_sale_agent ── tools/crm_mock.py（保修/维修/客户）
-         └─ shopping_guide_agent ── tools/crm_mock.py（客户/购买）
-              ↘ KnowledgeBase(viking) + ShortTermMemory(local) + LongTermMemory(viking|mem0)
-              ↘ AuthRequestProcessor（身份拦截）
-```
