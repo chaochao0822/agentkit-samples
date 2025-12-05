@@ -37,6 +37,8 @@ customer_support/
 
 ### 1. 安装依赖
 
+注意： 请使用 python3.12+以上版本。
+
 ```bash
 cd 02-use-cases/customer_support
 uv pip install -r requirements.txt

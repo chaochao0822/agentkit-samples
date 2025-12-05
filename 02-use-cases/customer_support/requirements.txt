@@ -1,2 +1,4 @@
-veadk-python>=0.2.27
+veadk-python==0.2.27
+google-adk==1.19.0
 agentkit-sdk-python>=0.1.13
+mem0ai==1.0.1

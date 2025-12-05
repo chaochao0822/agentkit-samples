@@ -67,7 +67,8 @@ else:
     if not tos_bucket_name:
         raise ValueError("DATABASE_TOS_BUCKET environment variable is not set")
     knowledge = KnowledgeBase(backend="viking", app_name=app_name)
-    knowledge.add_from_directory("./pre_build/knowledge", tos_bucket_name=tos_bucket_name)
+    knowledge.add_from_directory(str(Path(__file__).resolve().parent) + "/pre_build/knowledge", 
+                                 tos_bucket_name=tos_bucket_name)
 
 # 3. 配置长期记忆: 如果配置了Mem0，就使用Mem0，否则使用Viking，都不配置，默认创建一个Viking记忆库
 use_mem0 = os.getenv("DATABASE_MEM0_BASE_URL") and os.getenv("DATABASE_MEM0_API_KEY")
