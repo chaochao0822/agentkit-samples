@@ -43,3 +43,49 @@ Agent 能够在多轮对话中持续维护用户的订单状态。它通过使�
 该项目包含一个自定义插件 `CountInvocationPlugin`，它会挂载到 Agent 的生命周期中，用于实时统计 Agent 的运行次数和底层大语言模型（LLM）的调用次数。
 
 这演示了如何利用插件机制对 Agent 的内部行为进行监控、记录日志或注入自定义逻辑，为 Agent 的可观测性提供了强大的支持。
+
+## 运行方法
+### 1. 安装veadk和agentkit python sdk 配置环境变量
+
+```bash
+uv pip install veadk-python
+uv pip install agentkit-sdk-python
+```
+
+### 2. 运行本地命令行测试
+```bash
+python main.py
+```
+
+### 3. 运行veadk web客户端并使用浏览器登录 http://127.0.0.1:8000
+```bash
+cd ..
+veadk web
+
+```
+
+### 4. 部署到vefaas
+> **安全提示：请勿在生产环境中禁用密钥认证。确保 `VEFAAS_ENABLE_KEY_AUTH` 保持为 `true`（或不设置，默认为开启），并正确配置访问密钥和角色。只有在本地受控环境调试时，才可临时关闭认证，并务必加以警告。**
+
+```bash
+cd hello_world
+# 这一步直接运行即可
+export VEFAAS_ENABLE_KEY_AUTH=false
+# 这一步需要把YOUR_AK换成自己的ak
+export VOLCENGINE_ACCESS_KEY=YOUR_AK
+# 这一步需要把YOUR_AK换成自己的sk
+export VOLCENGINE_SECRET_KEY=YOUR_SK
+# 这一步部署应用到云上
+veadk deploy --vefaas-app-name=order-agent --use-adk-web --veapig-instance-name=<your veapig instance name> --iam-role "trn:iam::<your account id>:role/<your iam role name>"
+
+```
+
+### 5. 部署到AgentKit 并且使用client.py测试
+
+```bash
+cd hello_app
+# Uncomment the following line in agent.py to run the agentkit app server
+# agent_server_app.run(host="0.0.0.0", port=8000)
+agentkit config
+agentkit launch
+```

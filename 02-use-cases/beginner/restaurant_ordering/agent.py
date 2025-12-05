@@ -26,6 +26,14 @@ from veadk.tools.builtin_tools.web_search import web_search
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 
+# Deploy the agent as AgentkitAgentServerApp into the agentkit platform
+from agentkit.apps import AgentkitAgentServerApp
+from veadk.memory.short_term_memory import ShortTermMemory
+import logging
+
+logger = logging.getLogger(__name__)
+short_term_memory = ShortTermMemory(backend="local")
+
 
 RECIPES = (
     "Kung Pao Chicken",
@@ -71,7 +79,7 @@ async def summarize_order(tool_context: ToolContext = None) -> str:
     return summary
 
 
-hello_world_agent = Agent(
+order_agent = Agent(
     name="restaurant_ordering_agent",
     description=("An agent that takes customer orders at a restaurant."),
     instruction=f"""
@@ -136,12 +144,12 @@ class CountInvocationPlugin(BasePlugin):
         )
 
 
-root_agent = hello_world_agent
+root_agent = order_agent
 
 # about how to use context compaction, please refer to:
 # https://google.github.io/adk-docs/context/compaction/#example-of-context-compaction
 app = App(
-    name="hello_app",
+    name="restaurant_ordering",
     root_agent=root_agent,
     plugins=[
         CountInvocationPlugin(),
@@ -158,3 +166,36 @@ app = App(
         overlap_size=1,  # Include last invocation from the previous window.
     ),
 )
+
+# runner = Runner(agent=root_agent)
+
+# simple = AgentkitSimpleApp()
+
+# @simple.entrypoint
+# async def run(payload: dict, headers: dict) -> str:
+#     prompt = payload["prompt"]
+#     user_id = headers["user_id"]
+#     session_id = headers["session_id"]
+
+#     logger.info(
+#         f"Running agent with prompt: {prompt}, user_id: {user_id}, session_id: {session_id}"
+#     )
+#     try:
+#         response = await runner.run(messages=prompt, user_id=user_id, session_id=session_id)
+#     except Exception as e:
+#         logger.error(f"Error running agent: {e}")
+#         raise e
+
+#     logger.info(f"Run response: {response}")
+#     return response
+# uvicorn.run(simple, host="0.0.0.0", port=8000)
+
+agent_server_app = AgentkitAgentServerApp(
+    agent=root_agent,
+    short_term_memory=short_term_memory,
+)
+
+if __name__ == "__main__":
+    # Uncomment the following line to run the agentkit app server
+    # uvicorn.run(simple, host="0.0.0.0", port=8000)
+    agent_server_app.run(host="0.0.0.0", port=8000)
