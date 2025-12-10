@@ -1,12 +1,3 @@
-'''
-Author: haoxingjun
-Date: 2025-12-11 01:36:12
-Email: haoxingjun@bytedance.com
-LastEditors: haoxingjun
-LastEditTime: 2025-12-11 02:47:20
-Description: file information
-Company: ByteDance
-'''
 import os
 import json
 
