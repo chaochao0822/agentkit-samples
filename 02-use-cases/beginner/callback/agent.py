@@ -3,8 +3,15 @@ import logging
 import re
 from veadk import Agent, Runner
 from agentkit.apps import AgentkitAgentServerApp
-from .callbacks import after_agent_callback, after_tool_callback, before_tool_callback, before_model_callback, after_model_callback, before_agent_callback
-from .tools import write_article
+from callbacks import (
+    after_agent_callback,
+    after_tool_callback,
+    before_tool_callback,
+    before_model_callback,
+    after_model_callback,
+    before_agent_callback,
+)
+from tools import write_article
 from veadk.memory import ShortTermMemory
 import os
 
@@ -22,13 +29,12 @@ root_agent = Agent(
 )
 
 runner = Runner(agent=root_agent)
-short_term_memory = ShortTermMemory(
-    backend="local"
-)  
+short_term_memory = ShortTermMemory(backend="local")
 agent_server_app = AgentkitAgentServerApp(
     agent=root_agent,
     short_term_memory=short_term_memory,
 )
+
 
 async def main():
     """

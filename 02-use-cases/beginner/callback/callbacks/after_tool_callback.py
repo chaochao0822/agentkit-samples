@@ -9,6 +9,7 @@ import re
 
 logger = logging.getLogger(__name__)
 
+
 def after_tool_callback(
     tool: BaseTool,
     args: Dict[str, Any],
@@ -26,6 +27,7 @@ def after_tool_callback(
     # 过滤PII
     filtered_text = filter_pii(response_text)
     return Content(parts=[Part(text=filtered_text)])
+
 
 def filter_pii(
     text: str, patterns: Dict[str, str] = None, show_logs: bool = True
@@ -74,6 +76,8 @@ def filter_pii(
             return f"[{pii_type}已隐藏]"
 
         # 执行替换
-        filtered_text = pattern.sub(replace_and_log, filtered_text)
+        filtered_text = pattern.sub(
+            replace_and_log, str(filtered_text) if filtered_text is not None else ""
+        )
 
     return filtered_text
