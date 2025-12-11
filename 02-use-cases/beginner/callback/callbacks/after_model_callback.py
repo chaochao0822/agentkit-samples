@@ -1,10 +1,12 @@
-from google.adk.agents.callback_context import CallbackContext
+import logging
 from typing import Optional
+
+from google.adk.agents.callback_context import CallbackContext
 from google.genai import types
 from google.genai.types import Content
-import logging
 
 logger = logging.getLogger(__name__)
+
 
 def after_model_callback(
     callback_context: CallbackContext, llm_response: Content, **kwargs

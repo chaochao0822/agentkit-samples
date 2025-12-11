@@ -12,27 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import os
-from veadk import Agent, Runner
-from veadk.memory import ShortTermMemory, LongTermMemory
+
 from agentkit.apps import AgentkitAgentServerApp
+from veadk import Agent, Runner
+from veadk.memory import LongTermMemory, ShortTermMemory
 
 vikingmem_app_name = os.getenv("VIKINGMEM_APP_NAME", "vikingmem_test_app")
 
-short_term_memory=ShortTermMemory()
+short_term_memory = ShortTermMemory()
 long_term_memory = LongTermMemory(backend="viking", index=vikingmem_app_name)
 root_agent = Agent(
-        name="test_agent",
-        instruction="Use LoadMemory tool to search previous info.",
-        long_term_memory=long_term_memory,
-    )
+    name="test_agent",
+    instruction="Use LoadMemory tool to search previous info.",
+    long_term_memory=long_term_memory,
+)
 
 runner = Runner(
     agent=root_agent,
     short_term_memory=short_term_memory,
-    app_name='my_agent',
-    user_id='user_id',
+    app_name="my_agent",
+    user_id="user_id",
 )
 
 agent_server_app = AgentkitAgentServerApp(
@@ -42,4 +42,3 @@ agent_server_app = AgentkitAgentServerApp(
 
 if __name__ == "__main__":
     agent_server_app.run(host="0.0.0.0", port=8000)
-    

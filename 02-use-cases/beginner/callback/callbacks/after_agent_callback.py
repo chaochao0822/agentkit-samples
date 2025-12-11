@@ -1,11 +1,15 @@
-from google.adk.agents.callback_context import CallbackContext
-from typing import Any, Dict, Optional
-from google.genai import types
 import logging
+from typing import Optional
+
+from google.adk.agents.callback_context import CallbackContext
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
-def after_agent_callback(callback_context: CallbackContext) -> Optional[types.Content]:
+
+def after_agent_callback(
+    callback_context: CallbackContext,
+) -> Optional[types.Content]:
     """
     在智能体完成所有处理，即将结束会话时被调用。
     主要用于记录会话结束的日志。

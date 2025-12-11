@@ -1,10 +1,9 @@
-import requests
-import httpx
-
-from google.adk.cli.adk_web_server import CreateSessionRequest, RunAgentRequest
-from google.genai.types import Content, Part
 import asyncio
 
+import httpx
+import requests
+from google.adk.cli.adk_web_server import CreateSessionRequest, RunAgentRequest
+from google.genai.types import Content, Part
 
 if __name__ == "__main__":
     # Step 0: setup running configs

@@ -1,20 +1,20 @@
-from veadk import Agent, Runner
-from veadk.memory.short_term_memory import ShortTermMemory
-
 # Deploy the agent as AgentkitAgentServerApp into the agentkit platform
 from agentkit.apps import AgentkitAgentServerApp
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
 
 app_name = "veadk_playground_app_short_term_local"
 user_id = "veadk_playground_user_short_term_local"
 session_id = "veadk_playground_session_short_term_local"
 
 agent = Agent()
-short_term_memory = ShortTermMemory(
-    backend="local"
-)  
+short_term_memory = ShortTermMemory(backend="local")
 
 runner = Runner(
-    agent=agent, short_term_memory=short_term_memory, app_name=app_name, user_id=user_id
+    agent=agent,
+    short_term_memory=short_term_memory,
+    app_name=app_name,
+    user_id=user_id,
 )
 
 

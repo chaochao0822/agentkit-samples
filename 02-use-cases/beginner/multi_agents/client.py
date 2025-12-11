@@ -1,10 +1,9 @@
-import requests
-import httpx
-
-from google.adk.cli.adk_web_server import CreateSessionRequest, RunAgentRequest
-from google.genai.types import Content, Part
 import asyncio
 
+import httpx
+import requests
+from google.adk.cli.adk_web_server import CreateSessionRequest, RunAgentRequest
+from google.genai.types import Content, Part
 
 if __name__ == "__main__":
     # Step 0: setup running configs
@@ -54,6 +53,8 @@ if __name__ == "__main__":
                 print(line)
 
     async def send_request_parallel():
-        await send_request("我想买一台火山引擎虚拟机，用来做图像处理，可以帮我介绍一下哪个规格更适合我吗？")
+        await send_request(
+            "我想买一台火山引擎虚拟机，用来做图像处理，可以帮我介绍一下哪个规格更适合我吗？"
+        )
 
     asyncio.run(send_request_parallel())

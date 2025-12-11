@@ -17,13 +17,12 @@ import os
 import sys
 from pathlib import Path
 
-from agentkit.apps import AgentkitSimpleApp, AgentkitAgentServerApp
-from google.adk.agents import RunConfig
-from google.adk.agents.run_config import StreamingMode
-from google.adk.tools.mcp_tool.mcp_toolset import (McpToolset,
-                                                   StdioConnectionParams,
-                                                   StdioServerParameters)
-from google.genai.types import Content, Part
+from agentkit.apps import AgentkitAgentServerApp, AgentkitSimpleApp
+from google.adk.tools.mcp_tool.mcp_toolset import (
+    McpToolset,
+    StdioConnectionParams,
+    StdioServerParameters,
+)
 from veadk import Runner
 from veadk.agent_builder import AgentBuilder
 from veadk.memory.short_term_memory import ShortTermMemory
@@ -49,10 +48,9 @@ server_parameters = StdioServerParameters(
 )
 mcpTool = McpToolset(
     connection_params=StdioConnectionParams(
-        server_params=server_parameters,
-        timeout=60.0
+        server_params=server_parameters, timeout=60.0
     ),
-    errlog=None
+    errlog=None,
 )
 
 yaml_path = "agent.yaml"

@@ -1,5 +1,6 @@
 from google.adk.tools.tool_context import ToolContext
 
+
 def write_article(topic: str, word_count: int, tool_context: ToolContext) -> str:
     """
     一个简单的工具，根据给定的主题和字数要求生成一篇文章。

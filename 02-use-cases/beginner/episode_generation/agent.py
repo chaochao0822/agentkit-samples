@@ -16,9 +16,9 @@ import uuid
 
 from veadk import Agent
 from veadk.runner import Runner
-from veadk.tools.builtin_tools.web_search import web_search
 from veadk.tools.builtin_tools.image_generate import image_generate
 from veadk.tools.builtin_tools.video_generate import video_generate
+from veadk.tools.builtin_tools.web_search import web_search
 
 video_generator = Agent(
     name="video_generator",

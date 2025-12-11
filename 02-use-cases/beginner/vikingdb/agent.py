@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
+
+from agentkit.apps import AgentkitAgentServerApp
 from veadk import Agent, Runner
 from veadk.knowledgebase.knowledgebase import KnowledgeBase
 from veadk.memory.short_term_memory import ShortTermMemory
-from agentkit.apps import AgentkitAgentServerApp
 
 # 准备多个知识源
 with open("/tmp/tech.txt", "w") as f:
@@ -51,4 +51,3 @@ agent_server_app = AgentkitAgentServerApp(
 
 if __name__ == "__main__":
     agent_server_app.run(host="0.0.0.0", port=8000)
-

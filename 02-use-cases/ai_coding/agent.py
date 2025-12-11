@@ -43,12 +43,16 @@ short_term_memory = ShortTermMemory(backend="local")
 
 tracer = OpentelemetryTracer(exporters=[APMPlusExporter()])
 
-with open('%s/prompt.zh.md'%current_dir, 'r', encoding='utf-8') as f:
+with open("%s/prompt.zh.md" % current_dir, "r", encoding="utf-8") as f:
     instruction = f.read()
 root_agent = Agent(
     description="An AI coding agent that helps users solve programming problems",
     instruction=instruction,
-    tools=[run_code, upload_frontend_code_to_tos, get_url_of_frontend_code_in_tos],
+    tools=[
+        run_code,
+        upload_frontend_code_to_tos,
+        get_url_of_frontend_code_in_tos,
+    ],
     tracers=[tracer],
     short_term_memory=short_term_memory,
     planner=BuiltInPlanner(
@@ -57,16 +61,17 @@ root_agent = Agent(
             thinking_budget=1024,
         )
     ),
-    model_name='deepseek-v3-1-terminus'
-
+    model_name="deepseek-v3-1-terminus",
 )
 
 app_name = "ai_coding_agent"
-runner = Runner(app_name=app_name, agent=root_agent, short_term_memory=short_term_memory)
+runner = Runner(
+    app_name=app_name, agent=root_agent, short_term_memory=short_term_memory
+)
 
-agent_server_app = AgentkitAgentServerApp(agent=root_agent, short_term_memory=short_term_memory)
-
-
+agent_server_app = AgentkitAgentServerApp(
+    agent=root_agent, short_term_memory=short_term_memory
+)
 
 
 if __name__ == "__main__":

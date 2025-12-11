@@ -1,20 +1,15 @@
-import random
-
-from veadk import Agent, Runner
-from google.adk.a2a.utils.agent_to_a2a import to_a2a
-from google.adk.tools.tool_context import ToolContext
-from google.genai import types
+from a2a.types import AgentCapabilities, AgentCard, AgentProvider, AgentSkill
 from agentkit.apps import AgentkitA2aApp
-from tools.roll_die import roll_die
-from tools.check_prime import check_prime
-from a2a.types import AgentCard, AgentProvider, AgentCapabilities, AgentSkill
 from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
+from tools.check_prime import check_prime
+from tools.roll_die import roll_die
+from veadk import Agent, Runner
 
 a2a_app = AgentkitA2aApp()
 root_agent = Agent(
-    name='hello_world_agent',
+    name="hello_world_agent",
     description=(
-        'hello world agent that can roll a dice of 8 sides and check prime numbers.'
+        "hello world agent that can roll a dice of 8 sides and check prime numbers."
     ),
     instruction="""
       You roll dice and answer questions about the outcome of the dice rolls.
@@ -36,29 +31,31 @@ root_agent = Agent(
     tools=[
         roll_die,
         check_prime,
-    ]
+    ],
 )
 
 runner = Runner(agent=root_agent)
+
 
 @a2a_app.agent_executor(runner=runner)
 class MyAgentExecutor(A2aAgentExecutor):
     pass
 
+
 agent_card = AgentCard(
-  capabilities=AgentCapabilities(streaming=True),
-  description=root_agent.description,
-  name=root_agent.name,
-  defaultInputModes=["text"],
-  defaultOutputModes=["text"],
-  provider=AgentProvider(organization="agentkit", url=""),
-  skills=[AgentSkill(id="0", name="chat", description="Chat", tags=["chat"])],
-  url="http://localhost:8001",
-  version="1.0.0",
+    capabilities=AgentCapabilities(streaming=True),
+    description=root_agent.description,
+    name=root_agent.name,
+    default_input_modes=["text"],
+    default_output_modes=["text"],
+    provider=AgentProvider(organization="agentkit", url=""),
+    skills=[AgentSkill(id="0", name="chat", description="Chat", tags=["chat"])],
+    url="http://localhost:8001",
+    version="1.0.0",
 )
 
-print('agent start successfully ', root_agent.name)
+print("agent start successfully ", root_agent.name)
 
 # a2a_app = to_a2a(root_agent, port=8001)
-if __name__ == '__main__':
+if __name__ == "__main__":
     a2a_app.run(agent_card=agent_card, host="0.0.0.0", port=8001)

@@ -23,7 +23,6 @@ from dotenv import load_dotenv
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.planners import BuiltInPlanner
 from google.genai.types import ThinkingConfig
-
 from veadk import Agent, Runner
 from veadk.integrations.ve_identity import AuthRequestProcessor
 from veadk.knowledgebase import KnowledgeBase
@@ -34,10 +33,15 @@ sys.path.append(str(Path(__file__).resolve().parent))
 # 上层目录
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from tools.crm_mock import (create_service_record, delete_service_record,
-                            get_customer_info, get_customer_purchases,
-                            get_service_records, query_warranty,
-                            update_service_record)
+from tools.crm_mock import (
+    create_service_record,
+    delete_service_record,
+    get_customer_info,
+    get_customer_purchases,
+    get_service_records,
+    query_warranty,
+    update_service_record,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -51,7 +55,9 @@ supported_model_names = [default_model_name]
 
 model_name = os.getenv("MODEL_AGENT_NAME", default_model_name)
 if model_name not in supported_model_names:
-    logging.warning(f"MODEL_AGENT_NAME must be one of {supported_model_names}, if not, the MODEL_AGENT_NAME will be set to default_model_name: {default_model_name}")
+    logging.warning(
+        f"MODEL_AGENT_NAME must be one of {supported_model_names}, if not, the MODEL_AGENT_NAME will be set to default_model_name: {default_model_name}"
+    )
     model_name = default_model_name
 
 # 1. 配置短期记忆
@@ -67,23 +73,36 @@ else:
     if not tos_bucket_name:
         raise ValueError("DATABASE_TOS_BUCKET environment variable is not set")
     knowledge = KnowledgeBase(backend="viking", app_name=app_name)
-    knowledge.add_from_directory(str(Path(__file__).resolve().parent) + "/pre_build/knowledge", 
-                                 tos_bucket_name=tos_bucket_name)
+    knowledge.add_from_directory(
+        str(Path(__file__).resolve().parent) + "/pre_build/knowledge",
+        tos_bucket_name=tos_bucket_name,
+    )
 
 # 3. 配置长期记忆: 如果配置了Mem0，就使用Mem0，否则使用Viking，都不配置，默认创建一个Viking记忆库
 use_mem0 = os.getenv("DATABASE_MEM0_BASE_URL") and os.getenv("DATABASE_MEM0_API_KEY")
 if use_mem0:
     long_term_memory = LongTermMemory(backend="mem0", top_k=3, app_name=app_name)
 else:
-    use_viking_mem = os.getenv("DATABASE_VIKINGMEM_COLLECTION") and os.getenv("DATABASE_VIKINGMEM_MEMORY_TYPE")
+    use_viking_mem = os.getenv("DATABASE_VIKINGMEM_COLLECTION") and os.getenv(
+        "DATABASE_VIKINGMEM_MEMORY_TYPE"
+    )
     if use_viking_mem:
-        long_term_memory = LongTermMemory(backend="viking", index=os.getenv("DATABASE_VIKINGMEM_COLLECTION"))
+        long_term_memory = LongTermMemory(
+            backend="viking", index=os.getenv("DATABASE_VIKINGMEM_COLLECTION")
+        )
     else:
         long_term_memory = LongTermMemory(backend="viking", top_k=3, app_name=app_name)
 
 # 4. 导入crm 系统的函数工具
-crm_tool = [create_service_record, update_service_record, delete_service_record, get_customer_info,
-            get_customer_purchases, get_service_records, query_warranty]
+crm_tool = [
+    create_service_record,
+    update_service_record,
+    delete_service_record,
+    get_customer_info,
+    get_customer_purchases,
+    get_service_records,
+    query_warranty,
+]
 
 
 # 5. 通过前置拦截器，在智能体执行前，设置默认的customer_id
@@ -92,7 +111,8 @@ def before_agent_execution(callback_context: CallbackContext):
     callback_context.state["user:customer_id"] = default_user_id
 
 
-after_sale_prompt = '''
+after_sale_prompt = (
+    """
 你是一名专业且耐心的在线客服，负责协助客户处理咨询及商品售后服务。可使用内部工具和知识库，但需严格遵守以下准则：
 
 <指导原则>
@@ -118,7 +138,10 @@ after_sale_prompt = '''
 请根据上述要求，准确、简明且专业地回答客户问题，并积极协助解决售后问题。
 
 当前登录客户为： {user:customer_id} 。
-    ''' + "当前时间为：" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    """
+    + "当前时间为："
+    + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+)
 
 after_sale_agent = Agent(
     name="after_sale_agent",
@@ -138,7 +161,8 @@ after_sale_agent = Agent(
     run_processor=AuthRequestProcessor(),
 )
 
-shopping_guide_prompt = '''
+shopping_guide_prompt = (
+    """
 你是一名专业且耐心的在线客服，你的首要任务是帮助客户购买商品。你可使用工具或者检索知识库来 准确并简洁的回答客户问题.
 
 在回答客户问题以及协助客户的过程中时，请始终遵循以下指导原则：
@@ -162,7 +186,10 @@ shopping_guide_prompt = '''
 2. 禁止直接将 工具的结果直接输出给用户，你需要结合用户的问题，对工具的结果进行必要的筛选、格式化处理，在输出给用户时，还需要进行必要的润色，使回复内容更加的清晰、准确、简洁。  
 
 当前登录客户为： {user:customer_id}
-    ''' + "当前时间为：" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    """
+    + "当前时间为："
+    + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+)
 
 shopping_guide_agent = Agent(
     name="shopping_guide_agent",
@@ -186,7 +213,7 @@ agent = Agent(
     name="customer_support_agent",
     model_name=model_name,
     description="客服Agent：1）根据客户的购买需求，帮助客户选择合适的商品，引导客户完成购买流程；2）根据客户的售后问题，帮助客户处理商品的售后问题(信息查询、商品报修等)",
-    instruction='''
+    instruction="""
     你是一名在线客服，你的主要任务是帮助客户购买商品或者解决售后问题。
     ## 要求
     1. 你需要结合对话的上下文判断用户的意图， 是在做购买咨询还是售后服务咨询：
@@ -194,7 +221,7 @@ agent = Agent(
         - 如果用户是在做售后服务咨询，请直接将用户的问题转交给售后智能体来回答用户的问题，售后策略、保修策略的咨询也视为售后服务咨询。
         - 如果用户问与购买咨询或售后服务咨询无关的问题，请直接回复用户：“抱歉，我无法回答这个问题。我可以帮助您购买商品或者解决售后问题。”
     2. 请注意你需要耐心有礼貌的和客户进行沟通，避免回复客户时使用不专业的语言或行为， 同时避免回复和问题无关的内容。
-    ''',
+    """,
     sub_agents=[after_sale_agent, shopping_guide_agent],
     long_term_memory=long_term_memory,
 )
@@ -202,7 +229,9 @@ agent = Agent(
 runner = Runner(agent=agent, app_name=app_name)
 root_agent = agent
 
-agent_server_app = AgentkitAgentServerApp(agent=root_agent, short_term_memory=short_term_memory)
+agent_server_app = AgentkitAgentServerApp(
+    agent=root_agent, short_term_memory=short_term_memory
+)
 
 if __name__ == "__main__":
     agent_server_app.run(host="0.0.0.0", port=8000)

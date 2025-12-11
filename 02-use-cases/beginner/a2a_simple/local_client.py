@@ -1,24 +1,20 @@
-import logging
-
-from typing import Any
-from uuid import uuid4
 import asyncio
-from a2a.client import ClientConfig, ClientFactory, create_text_message_object
-from a2a.types import TransportProtocol
-import agent
-import httpx
+from typing import Any
 
-from a2a.client import A2ACardResolver, A2AClient
+import httpx
+from a2a.client import (
+    ClientConfig,
+    ClientFactory,
+    create_text_message_object,
+)
 from a2a.types import (
     AgentCard,
-    MessageSendParams,
-    SendMessageRequest,
-    SendStreamingMessageRequest,
+    TransportProtocol,
 )
 from a2a.utils.constants import (
     AGENT_CARD_WELL_KNOWN_PATH,
-    EXTENDED_AGENT_CARD_PATH,
 )
+
 
 class A2ASimpleClient:
     """A2A Simple to call A2A servers."""
@@ -50,7 +46,7 @@ class A2ASimpleClient:
             else:
                 # Fetch the agent card
                 agent_card_response = await httpx_client.get(
-                    f'{agent_url}{AGENT_CARD_WELL_KNOWN_PATH}'
+                    f"{agent_url}{AGENT_CARD_WELL_KNOWN_PATH}"
                 )
                 agent_card_data = self._agent_info_cache[agent_url] = (
                     agent_card_response.json()
@@ -81,31 +77,28 @@ class A2ASimpleClient:
                 responses.append(response)
 
             # The response is a tuple - get the first element (Task object)
-            if (
-                responses
-                and isinstance(responses[0], tuple)
-                and len(responses[0]) > 0
-            ):
+            if responses and isinstance(responses[0], tuple) and len(responses[0]) > 0:
                 task = responses[0][0]  # First element of the tuple
-
                 # Extract text: task.artifacts[0].parts[0].root.text
                 try:
                     return task.artifacts[0].parts[0].root.text
                 except (AttributeError, IndexError):
                     return str(task)
 
-            return 'No response received'
+            return "No response received"
+
 
 a2a_client = A2ASimpleClient()
+
 
 async def test_trending_topics() -> None:
     """Test news topics agent."""
     for i in range(0, 10):
         trending_topics = await a2a_client.create_task(
-            f'http://localhost:8001', "hello , show me one number of 6-sided"
+            "http://localhost:8001", "hello , show me one number of 6-sided"
         )
         print(trending_topics)
 
 
 # Run the async function
-asyncio.run(test_trending_topics())     
+asyncio.run(test_trending_topics())

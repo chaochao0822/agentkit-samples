@@ -1,7 +1,14 @@
-from veadk.agents.loop_agent import LoopAgent
-from veadk import Agent
+import asyncio
+
 from google.adk.tools.tool_context import ToolContext
-from prompts import JUDGE_AGENT_PROMPT, REFINE_AGENT_PROMPT, LOOP_REFINE_RESPONSE_AGENT_PROMPT
+from prompts import (
+    JUDGE_AGENT_PROMPT,
+    LOOP_REFINE_RESPONSE_AGENT_PROMPT,
+    REFINE_AGENT_PROMPT,
+)
+from veadk import Agent, Runner
+from veadk.agents.loop_agent import LoopAgent
+from veadk.memory.short_term_memory import ShortTermMemory
 
 judge_agent = Agent(
     name="judge_agent",
@@ -15,11 +22,13 @@ refine_agent = Agent(
     instruction=REFINE_AGENT_PROMPT,
 )
 
+
 def exit_tool(tool_context: ToolContext) -> str:
     print(f"  [Tool Call] exit_loop triggered by {tool_context.agent_name}")
     # tool_context.actions.escalate = True
     tool_context.actions.end_of_agent = True
     return {}
+
 
 loop_refine_response_agent = LoopAgent(
     name="loop_refine_response_agent",
@@ -27,12 +36,9 @@ loop_refine_response_agent = LoopAgent(
     instruction=LOOP_REFINE_RESPONSE_AGENT_PROMPT,
     sub_agents=[judge_agent, refine_agent],
     tools=[exit_tool],
-    max_iterations=1
+    max_iterations=1,
 )
 
-from veadk import Runner
-from veadk.memory.short_term_memory import ShortTermMemory
-import asyncio
 
 app_name = "veadk_playground_app"
 user_id = "veadk_playground_user"
@@ -47,11 +53,14 @@ runner = Runner(
     user_id=user_id,
 )
 
+
 async def main():
     response = await runner.run(
-        messages="用户问题：“我买的衣服尺码偏小，能换大一号吗？需要什么流程？” 客服原始回复：“能换。把吊牌留着，自己寄回来，运费先垫上，到时候退你。”", session_id=session_id
+        messages="用户问题：“我买的衣服尺码偏小，能换大一号吗？需要什么流程？” 客服原始回复：“能换。把吊牌留着，自己寄回来，运费先垫上，到时候退你。”",
+        session_id=session_id,
     )
     print(response)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

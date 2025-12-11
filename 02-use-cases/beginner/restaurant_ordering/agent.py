@@ -12,24 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from veadk.agent import Agent
-from google.adk.planners.built_in_planner import BuiltInPlanner
+import logging
+
+# Deploy the agent as AgentkitAgentServerApp into the agentkit platform
+from agentkit.apps import AgentkitAgentServerApp
 from google.adk.agents.base_agent import BaseAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.apps import App
 from google.adk.apps.app import EventsCompactionConfig
 from google.adk.models.llm_request import LlmRequest
+from google.adk.planners.built_in_planner import BuiltInPlanner
 from google.adk.plugins.base_plugin import BasePlugin
 from google.adk.plugins.context_filter_plugin import ContextFilterPlugin
-from google.adk.plugins.save_files_as_artifacts_plugin import SaveFilesAsArtifactsPlugin
-from veadk.tools.builtin_tools.web_search import web_search
+from google.adk.plugins.save_files_as_artifacts_plugin import (
+    SaveFilesAsArtifactsPlugin,
+)
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
-
-# Deploy the agent as AgentkitAgentServerApp into the agentkit platform
-from agentkit.apps import AgentkitAgentServerApp
+from veadk.agent import Agent
 from veadk.memory.short_term_memory import ShortTermMemory
-import logging
+from veadk.tools.builtin_tools.web_search import web_search
 
 logger = logging.getLogger(__name__)
 short_term_memory = ShortTermMemory(backend="local")

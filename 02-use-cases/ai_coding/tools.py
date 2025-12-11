@@ -10,6 +10,7 @@ bucket_name = os.getenv("DATABASE_TOS_BUCKET")
 
 client: tos.TosClientV2 = None
 
+
 def _init_tos_client():
     global client
     if client is not None:
@@ -27,8 +28,13 @@ def _init_tos_client():
         sk = cred.secret_access_key
         security_token = cred.session_token
 
-    client = tos.TosClientV2(ak=ak, sk=sk, security_token=security_token,
-                             endpoint=f"tos-{region}.volces.com", region=region)
+    client = tos.TosClientV2(
+        ak=ak,
+        sk=sk,
+        security_token=security_token,
+        endpoint=f"tos-{region}.volces.com",
+        region=region,
+    )
 
 
 def upload_frontend_code_to_tos(code: str, code_type: str) -> str:
@@ -65,7 +71,7 @@ def upload_frontend_code_to_tos(code: str, code_type: str) -> str:
         resp = client.put_object(
             bucket_name,
             object_key,
-            content=code.encode('utf-8'),
+            content=code.encode("utf-8"),
             acl=tos.ACLType.ACL_Public_Read,
         )
         if resp.status_code == 200:

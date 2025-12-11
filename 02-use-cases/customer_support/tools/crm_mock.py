@@ -45,7 +45,7 @@ mock_service_records = [
         "status": "completed",
         "estimated_duration": 120,
         "actual_duration": 110,
-        "notes": "更换屏幕面板，测试正常"
+        "notes": "更换屏幕面板，测试正常",
     },
 ]
 
@@ -69,7 +69,7 @@ def get_customer_info(customer_id: str) -> dict:
         "total_purchases": 3,
         "lifetime_value": 28500.00,
         "support_cases_count": 2,
-        "communication_preferences": ["email", "sms"]
+        "communication_preferences": ["email", "sms"],
     }
 
 
@@ -90,7 +90,7 @@ def get_customer_purchases(customer_id: str) -> list:
             "purchase_date": "2023-12-10",
             "warranty_end_date": "2025-12-10",
             "warranty_type": "standard",
-            "status": "active"
+            "status": "active",
         },
         {
             "product_id": "PROD002",
@@ -100,8 +100,8 @@ def get_customer_purchases(customer_id: str) -> list:
             "purchase_date": "2023-08-15",
             "warranty_end_date": "2024-08-15",
             "warranty_type": "extended",
-            "status": "active"
-        }
+            "status": "active",
+        },
     ]
 
 
@@ -121,7 +121,7 @@ def query_warranty(serial_number: str) -> dict:
             "purchase_date": "2023-12-10",
             "warranty_end_date": "2025-12-10",
             "warranty_type": "standard",
-            "status_text": "保修有效"
+            "status_text": "保修有效",
         }
     return {
         "serial_number": "SN20240002",
@@ -130,7 +130,7 @@ def query_warranty(serial_number: str) -> dict:
         "purchase_date": "2023-08-15",
         "warranty_end_date": "2024-08-15",
         "warranty_type": "extended",
-        "status_text": "保修已经过期"
+        "status_text": "保修已经过期",
     }
 
 
@@ -145,7 +145,9 @@ def get_service_records(customer_id: str) -> list:
     return mock_service_records
 
 
-def create_service_record(customer_id: str, service_record: ServiceRecordCreate) -> dict:
+def create_service_record(
+    customer_id: str, service_record: ServiceRecordCreate
+) -> dict:
     """创建维修记录
     :param customer_id: 客户ID
     :param service_record: 创建的维修记录信息
@@ -165,13 +167,15 @@ def create_service_record(customer_id: str, service_record: ServiceRecordCreate)
         "status": "scheduled",
         "estimated_duration": service_record.estimated_duration,
         "actual_duration": None,
-        "notes": None
+        "notes": None,
     }
     mock_service_records.append(r)
     return r
 
 
-def update_service_record(customer_id: str, service_id: str, service_record: ServiceRecordUpdate) -> dict:
+def update_service_record(
+    customer_id: str, service_id: str, service_record: ServiceRecordUpdate
+) -> dict:
     """更新维修记录
     :param customer_id: 客户ID
     :param service_id: 维修记录ID
@@ -184,7 +188,9 @@ def update_service_record(customer_id: str, service_id: str, service_record: Ser
         if r["record_id"] == service_id:
             r["service_date"] = service_record.service_date or r["service_date"]
             r["status"] = service_record.status or r["status"]
-            r["actual_duration"] = service_record.actual_duration or r["actual_duration"]
+            r["actual_duration"] = (
+                service_record.actual_duration or r["actual_duration"]
+            )
             r["notes"] = service_record.notes or r["notes"]
             return r
     return {"error": "Service record not found"}

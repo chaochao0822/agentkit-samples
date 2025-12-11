@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from veadk import Agent
-from veadk.tools.builtin_tools.web_search import web_search
-from veadk.memory.short_term_memory import ShortTermMemory
 from agentkit.apps import AgentkitAgentServerApp
-
+from veadk import Agent
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.web_search import web_search
 
 instruction = """# 角色
 你是一名专业的旅游行程规划师，擅长根据用户需求，结合当地实际情况，规划出包含自然景点、人文景点和当地美食的旅游行程，并且熟练运用各类旅游相关工具。
@@ -105,9 +104,8 @@ root_agent = Agent(
 )
 
 agent_server_app = AgentkitAgentServerApp(
-  agent=root_agent,
-  short_term_memory=short_term_memory
+    agent=root_agent, short_term_memory=short_term_memory
 )
 
 if __name__ == "__main__":
-  agent_server_app.run(host="0.0.0.0", port=8000)
+    agent_server_app.run(host="0.0.0.0", port=8000)

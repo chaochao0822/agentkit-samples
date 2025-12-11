@@ -1,14 +1,15 @@
-import sys
 import os
+import sys
+
+from agentkit.apps import AgentkitAgentServerApp
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
-from agentkit.apps import AgentkitAgentServerApp
 
 # Add current directory to Python path to support sub_agents imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from sub_agents.sequential_agent import sequential_service_agent
 from prompts import CUSTOMER_SERVICE_AGENT_PROMPT, PRE_PROCESS_AGENT_PROMPT
+from sub_agents.sequential_agent import sequential_service_agent
 
 short_term_memory = ShortTermMemory(
     backend="local"
@@ -24,7 +25,7 @@ customer_service_agent = Agent(
     name="customer_service_agent",
     description=("你是一个智能客服，根据用户需求，回答用户问题"),
     instruction=CUSTOMER_SERVICE_AGENT_PROMPT,
-    sub_agents=[pre_process_agent, sequential_service_agent]
+    sub_agents=[pre_process_agent, sequential_service_agent],
 )
 
 root_agent = customer_service_agent

@@ -1,7 +1,14 @@
+import asyncio
+
+from prompts import (
+    PARALLEL_GET_INFO_AGENT_PROMPT,
+    RAG_SEARCH_AGENT_PROMPT,
+    WEB_SEARCH_AGENT_PROMPT,
+)
+from veadk import Agent, Runner
 from veadk.agents.parallel_agent import ParallelAgent
+from veadk.memory.short_term_memory import ShortTermMemory
 from veadk.tools.builtin_tools.web_search import web_search
-from veadk import Agent
-from prompts import PARALLEL_GET_INFO_AGENT_PROMPT, RAG_SEARCH_AGENT_PROMPT, WEB_SEARCH_AGENT_PROMPT
 
 rag_search_agent = Agent(
     name="rag_search_agent",
@@ -20,12 +27,9 @@ parallel_get_info_agent = ParallelAgent(
     name="parallel_get_info_agent",
     description="根据用户需求，并行执行子任务，快速获取相关信息",
     instruction=PARALLEL_GET_INFO_AGENT_PROMPT,
-    sub_agents=[rag_search_agent, web_search_agent]
+    sub_agents=[rag_search_agent, web_search_agent],
 )
 
-from veadk import Runner
-from veadk.memory.short_term_memory import ShortTermMemory
-import asyncio
 
 app_name = "veadk_playground_app"
 user_id = "veadk_playground_user"
@@ -40,12 +44,14 @@ runner = Runner(
     user_id=user_id,
 )
 
+
 async def main():
     response = await runner.run(
         messages="我想买一台火山引擎虚拟机，用来做图像处理，可以帮我介绍一下哪个规格更适合我吗？",
         session_id=session_id,
     )
     print(response)
-    
+
+
 if __name__ == "__main__":
     asyncio.run(main())

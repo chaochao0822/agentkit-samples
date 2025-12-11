@@ -1,9 +1,9 @@
+import logging
+from typing import Optional
+
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmRequest, LlmResponse
 from google.genai import types
-from google.genai.types import Content, Part
-from typing import Optional
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +14,7 @@ BLOCKED_WORDS_CHINESE = [
     "minganci",
     "bukexiangdeshi",
 ]
+
 
 def before_model_callback(
     callback_context: CallbackContext, llm_request: LlmRequest
@@ -71,4 +72,3 @@ def before_model_callback(
     logger.info("[Callback] 继续执行模型调用。")
     # 返回 None 表示允许按照（已修改的）请求继续调用大语言模型
     return None
-

@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import asyncio
+
 from veadk import Agent, Runner
-from veadk.memory import ShortTermMemory, LongTermMemory
-from agentkit.apps import AgentkitAgentServerApp
+from veadk.memory import LongTermMemory, ShortTermMemory
 
 vikingmem_app_name = "ltm_local"
 app_name = "test_app"
