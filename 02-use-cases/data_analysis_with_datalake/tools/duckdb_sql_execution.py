@@ -60,4 +60,5 @@ def duckdb_sql_execution(sql: str, user_question: str = "") -> str:
             "table": view_name,
         },
     }
+    console.print(f"[duckdb_sql_execution] Result: {result}")
     return json.dumps(result, ensure_ascii=False)

@@ -93,20 +93,28 @@ SYSTEM_PROMPT = """
 **Thought:** 已获取海报链接，现在生成视频。
 **Action:** `video_generate(params=[{"video_name": "life_of_pi_video.mp4", "first_frame": "https://.../pi.jpg", "prompt": "大海上的孤舟，奇幻漂流风格，海浪轻轻波动。 --rs 1080p"}], batch_size=1)`
 
-#### Q5: 帮我找一张海报里有红色跑车的电影，并把它做成视频 (视觉描述 -> 视频)
-**User:** "帮我找一张海报里有红色跑车的电影，并把它做成视频。"
+#### Q5：宫崎骏的电影评分超过7.5，包含飞机的海报，生成视频
+**User:** "宫崎骏的电影评分超过7.5，包含飞机的海报，生成视频。"
 **Thought:**
-1. 用户未指定电影名，而是描述画面内容（“红色跑车”）。
-2. 这是**视觉检索**任务，必须使用 LanceDB 查找符合描述的海报。
+1. 用户需要查找宫崎骏导演的电影，评分超过7.5，且海报包含飞机元素。
+2. 这是**混合检索**任务，需要使用 LanceDB 进行视觉内容搜索（“包含飞机”），同时添加导演和评分的元数据过滤。
 3. 获取检索结果后，调用视频生成工具。
-**Action:** `lancedb_hybrid_execution(query_text="poster with a red sports car", select=["series_title", "poster_precision_link"], limit=1)`
-**Observation:** `[{"series_title": "Ford v Ferrari", "poster_precision_link": "https://.../fvf.jpg"}]`
-**Thought:** 已找到符合描述的电影《Ford v Ferrari》，现在生成视频。
-**Action:** `video_generate(params=[{"video_name": "car_movie.mp4", "first_frame": "https://.../fvf.jpg", "prompt": "红色跑车在赛道上飞驰，引擎轰鸣，速度感。"}], batch_size=1)`
+**Action:** `lancedb_hybrid_execution(query_text="poster with airplane", filters="director LIKE '%宫崎骏%' AND imdb_rating > 7.5", select=["series_title", "poster_precision_link"], limit=1)`
+**Observation:** `[{"series_title": "天空之城", "poster_precision_link": "https://.../castle_in_the_sky.jpg"}]`
+**Thought:** 已找到符合描述的电影《天空之城》，现在生成视频。
+**Action:** `video_generate(params=[{"video_name": "castle_in_the_sky_video.mp4", "first_frame": "https://.../castle_in_the_sky.jpg", "prompt": "天空之城的飞行石照亮云层，巨大的飞行堡垒缓缓移动，充满奇幻色彩。"}], batch_size=1)`
 
 # 输出格式
 - 按照 "Thought (思考) -> Action (行动) -> Observation (观察) -> Final Answer (最终回答)" 模式呈现结果。
 - 语言表达专业、清晰，对每个步骤的描述准确明了。
 - 若使用工具，需明确写出工具名称及具体参数。
+- 当需要展示海报图片时，以 Markdown 图片列表形式返回，例如：
+  ```
+  ! `https://example.com/image1.png`
+  ```
+- 当需要展示视频时，以 Markdown 视频链接列表形式返回，例如：
+  ```
+  <video src=" `https://example.com/video1.mp4` " width="640" controls>分镜视频1</video>
+  ```
 ```
 """
