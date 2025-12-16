@@ -192,7 +192,7 @@ uv run parallel.py
 
  - 工具类型选择：预置工具 -> Skill Sandbox 
 
-![](assets/images/skill-sandbox.jpeg)
+![](assets/images/skill-sandbox-iam-role.jpeg)
 
 **4. 设置环境变量：**
 
@@ -208,6 +208,7 @@ export VOLCENGINE_SECRET_KEY=<Your Secret Key>
 cd agentkit-samples/00-advanced/agent_skills
 
 # 配置部署参数
+# optional：如果 agentkit config 中不添加 --runtime_envs AGENTKIT_TOOL_ID={{your_tool_id}}，可以在 AgentKit 控制台 智能体运行时 中，关键组件，选择 沙箱工具，并发布
 agentkit config \
 --agent_name agent_skills \
 --entry_point 'agent.py' \
@@ -227,7 +228,7 @@ uv run client.py
 
 ## 内置 skills 列表
 
-- 记得修改一下 {YOUR_TOS_BUCKET_NAME}，这是 AgentKit 默认为用户创建的 tos 存储桶，一般格式为 `agentkit-platform-{your_account_id}`
+- 记得修改一下 {YOUR_TOS_BUCKET_NAME}，这是 AgentKit 默认为用户创建的 tos 存储桶，格式为 `agentkit-platform-{your_account_id}`，`如果没有这个 tos 存储桶，需要自己创建`
 
 | skills                | 描述            | 示例提示词      |
 | --------------------- | -------------- | -------------- |
@@ -253,8 +254,8 @@ uv run client.py
 
 ## 示例提示词
 
-- 记得修改一下 {YOUR_TOS_BUCKET_NAME}，这是 AgentKit 默认为用户创建的 tos 存储桶，一般格式为 `agentkit-platform-{your_account_id}`
-- 下载自己 tos 中的 skills 到 sandbox，需要在 `agentkit-platform-{your_account_id}` 这个 tos 存储桶中，新建 skills 文件夹，然后将需要的 skills 上传到这个文件夹
+- 记得修改一下 {YOUR_TOS_BUCKET_NAME}，这是 AgentKit 默认为用户创建的 tos 存储桶，格式为 `agentkit-platform-{your_account_id}`，`如果没有这个 tos 存储桶，需要自己创建`
+- 下载自己 tos 中的 skills 到 sandbox，需要在 `agentkit-platform-{your_account_id}` 这个 tos 存储桶中，`新建 skills 文件夹`，然后将需要的 skills 上传到这个文件夹
 - 如果需要下载自己 tos 中的一些文件，提示词中举例的 tos url 不可用，需要替换为自己的 tos url
 
 | 是否使用 aio 中的内置 skills | 产物是否上传 tos | 示例提示词      |
